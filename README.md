@@ -1,20 +1,59 @@
-# BuyBox Model Price Predictor API
+# BuyBox Price Predictor API
 
-This is a FastAPI-based API for predicting the best sell price for winning the BuyBox.
+## 📌 Overview
 
-## Project structure
+A machine learning-based API designed to predict competitive BuyBox prices using historical pricing data. This system helps sellers optimize pricing strategies and improve their chances of winning the BuyBox.
+
+---
+
+## 🚀 Features
+
+* Predict BuyBox price using ML models
+* REST API for real-time predictions
+* Data-driven pricing insights
+* Scalable backend using FastAPI
+
+---
+
+## 🛠️ Tech Stack
+
+* Python
+* FastAPI
+* Machine Learning (Regression / Time-Series)
+* Docker (optional if used)
+
+---
+
+## 📂 Project Structure
+
+```
+app/
+ ├── main.py
+ ├── models/
+ ├── routes/
+ └── services/
+```
+
+---
+
+## ▶️ How to Run
 
 ```bash
-BuyBox-Model-Price-Predictor/
-├── app/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── schemas.py
-│   ├── predictor.py
-│   ├── preprocessing.py
-│   └── model_loader.py
-├── models/
-│   └── buybox_artifacts.pkl
-├── requirements.txt
-├── Dockerfile
-└── README.md
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+---
+
+## 📊 Future Improvements
+
+* Add advanced ML models (XGBoost, LSTM)
+* Improve prediction accuracy
+* Add dashboard for visualization
+
+---
+
+## 👨‍💻 Author
+
+Abhay Chavda
+GitHub: https://github.com/Abhay-Chavda
