@@ -1,55 +1,35 @@
 # BuyBox Price Predictor API
 
-A machine-learning-powered REST API that predicts a competitive selling price and estimates the probability of winning the Buy Box from historical competitor and seller data.
+A self-contained machine-learning demonstration that exposes a Buy Box price recommendation model through a FastAPI REST API.
+
+> **Portfolio note:** The original internship dataset and proprietary model are not included. This public repository uses synthetic marketplace data to reproduce the project's ML-to-API workflow without exposing company data or intellectual property.
 
 ## Overview
 
-The API takes seller information, Buy Box history, competitor pricing history, and a permitted price range. It evaluates candidate prices and returns the price with the highest price × winning-probability score.
+The API takes seller/competitor history and a permitted price range. It evaluates candidate selling prices and returns the price with the highest `price × winning_probability` score.
 
-This project focuses on turning a trained ML model into a usable backend service with FastAPI and Docker.
+The public demo keeps the same feature-engineering and prediction architecture while using a separately trained synthetic model.
 
 ## Features
 
 - ML-based Buy Box winning-probability prediction
-- Searches a configurable price range for a recommended selling price
+- Candidate price search over a configurable range
+- Feature engineering with Pandas/NumPy
 - REST API built with FastAPI
-- Input validation using Pydantic
-- Data preprocessing before inference
-- Model artifact loading with Joblib
-- Health-check endpoint
+- Request validation with Pydantic
+- Model persistence with Joblib
+- Synthetic model training and hold-out evaluation
+- Interactive Swagger/OpenAPI documentation
 - Docker support
-
-## API Endpoints
-
-### `GET /`
-
-Returns a basic API status message.
-
-### `GET /health`
-
-Returns the service health status.
-
-### `POST /predict`
-
-Accepts seller and competitor history and returns:
-
-```json
-{
-  "best_price": 0.0,
-  "winning_probability": 0.0
-}
-```
-
-The exact values depend on the supplied input data and trained model artifact.
 
 ## Tech Stack
 
-- **Python**
+- **Python 3.11**
 - **FastAPI** — REST API
 - **Pydantic** — request validation
-- **Pandas / NumPy** — data processing
-- **scikit-learn** — machine-learning utilities
-- **Joblib** — model/artifact loading
+- **Pandas / NumPy** — feature engineering
+- **scikit-learn** — model training and inference
+- **Joblib** — model artifact persistence
 - **Uvicorn** — ASGI server
 - **Docker** — containerization
 
@@ -62,7 +42,12 @@ BuyBox-Predictor/
 │   ├── predictor.py
 │   ├── preprocessing.py
 │   ├── model_loader.py
-│   └── schemas.py
+│   ├── schemas.py
+│   └── demo_model.py
+├── examples/
+│   └── sample_request.json
+├── models/
+│   └── buybox_artifacts.pkl   # generated locally, not committed
 ├── Dockerfile
 ├── requirements.txt
 └── README.md
@@ -77,13 +62,13 @@ git clone https://github.com/Abhay-Chavda/BuyBox-Predictor.git
 cd BuyBox-Predictor
 ```
 
-### 2. Create a virtual environment
+### 2. Create and activate a virtual environment
 
 ```bash
 python -m venv .venv
 ```
 
-Activate it on Windows:
+Windows PowerShell:
 
 ```powershell
 .venv\Scripts\Activate.ps1
@@ -95,47 +80,89 @@ Activate it on Windows:
 pip install -r requirements.txt
 ```
 
-### 4. Start the API
+### 4. Generate the synthetic demo model
+
+The model artifact is intentionally generated locally instead of committed to GitHub.
+
+```bash
+python app/demo_model.py
+```
+
+The script generates synthetic feature rows, trains a logistic-regression classifier, evaluates it on a held-out test split, and saves `models/buybox_artifacts.pkl`.
+
+The printed evaluation metrics describe **only the synthetic demonstration dataset** and should not be interpreted as results from the original internship model.
+
+### 5. Start the API
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-The API will be available at `http://127.0.0.1:8000`.
+Open:
 
-Interactive API documentation is available at:
+- Swagger UI: `http://127.0.0.1:8000/docs`
+- ReDoc: `http://127.0.0.1:8000/redoc`
 
-- `http://127.0.0.1:8000/docs`
-- `http://127.0.0.1:8000/redoc`
+## Test the Prediction Endpoint
+
+A ready-to-use request is available at `examples/sample_request.json`.
+
+In Swagger UI:
+
+1. Open `POST /predict`.
+2. Click **Try it out**.
+3. Paste the contents of `examples/sample_request.json`.
+4. Click **Execute**.
+
+The API returns:
+
+```json
+{
+  "best_price": 0.0,
+  "winning_probability": 0.0
+}
+```
+
+The exact values depend on the generated synthetic model and sample input.
 
 ## Run with Docker
 
-Build the image:
+Docker generates the synthetic model during image build, so no model file needs to be committed.
 
 ```bash
 docker build -t buybox-predictor .
-```
-
-Run the container:
-
-```bash
 docker run -p 8000:8000 buybox-predictor
 ```
 
+Then open `http://127.0.0.1:8000/docs`.
+
 ## How Prediction Works
 
-For a supplied seller and Buy Box history, the service:
+For a supplied Buy Box snapshot, the service:
 
-1. Loads the relevant historical data.
-2. Preprocesses the input features.
-3. Generates candidate selling prices between the supplied minimum and maximum price.
-4. Calculates the model's winning probability for each candidate.
-5. Scores each candidate using price × winning probability.
-6. Returns the candidate with the highest score.
+1. Receives competitor/seller history.
+2. Engineers the same 17 model features used by the public API.
+3. Selects the requested seller and Buy Box snapshot.
+4. Generates candidate prices between the requested minimum and maximum.
+5. Recalculates price-related features for each candidate.
+6. Uses the trained classifier to estimate Buy Box winning probability.
+7. Scores each candidate using `price × winning_probability`.
+8. Returns the candidate with the highest score.
+
+## Model Training
+
+The demonstration model is trained from synthetic marketplace snapshots generated by `app/demo_model.py`. The training pipeline uses:
+
+- StandardScaler
+- LogisticRegression
+- 80/20 stratified train/test split
+- Accuracy and classification-report evaluation
+
+No original company records, credentials, or proprietary model artifacts are required to run the public demo.
 
 ## Project Status
 
-The core prediction API is implemented. The repository is currently focused on the inference/API layer; model training and dataset preparation are not included as part of this repository.
+**Working portfolio demonstration.** The public version reproduces the ML inference/API workflow with synthetic data. It is intentionally separate from the original internship model and dataset.
 
 ## Author
 
