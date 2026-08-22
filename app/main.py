@@ -32,7 +32,10 @@ def predict(request: PredictRequest):
         seller_id = request.seller_id
         buybox_id = request.buybox_history_id
 
-        df_features = refining_data(df)
+        # At inference time the Buy Box winner is unknown by definition.
+        # The training pipeline includes the historical target label, while
+        # prediction uses only features available before the outcome.
+        df_features = refining_data(df, include_target=False)
 
         results = find_best_price(
             df=df_features,
