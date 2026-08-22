@@ -1,69 +1,118 @@
-"""Train a small synthetic Buy Box demo model.
+"""Train a self-contained synthetic Buy Box demonstration model.
 
-This model is intentionally independent of the original internship data/model.
-It creates synthetic seller/competitor observations so the public repository can
-be run end-to-end without exposing proprietary data.
+The original internship dataset/model is not included in this public repository.
+This script creates synthetic marketplace snapshots, runs the same feature
+engineering used by the API, trains a demonstration classifier, and writes the
+artifact expected by the FastAPI application.
 """
 
 from pathlib import Path
+
 import joblib
 import numpy as np
+import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+
+from app.preprocessing import refining_data
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEL_DIR = ROOT / "models"
 MODEL_DIR.mkdir(exist_ok=True)
 OUTPUT = MODEL_DIR / "buybox_artifacts.pkl"
 
+FEATURE_COLUMNS = [
+    "SellPrice",
+    "ShippingPrice",
+    "TotalPrice",
+    "MinCompetitorPrice",
+    "MinTotalPriceInSnapshot",
+    "PriceGap",
+    "TotalPriceGap",
+    "PriceGapPercent",
+    "PriceRank",
+    "PriceRankNormalized",
+    "TotalCompetitorsInSnapshot",
+    "PositiveFeedbackPercent",
+    "MaxFeedbackInSnapshot",
+    "FeedbackGapFromMax",
+    "IsMinSellPrice",
+    "IsMinTotalPrice",
+    "IsFBA",
+]
 
-def generate_data(n_samples: int = 3000, seed: int = 42):
+
+def generate_synthetic_history(
+    n_snapshots: int = 500, sellers_per_snapshot: int = 6, seed: int = 42
+) -> pd.DataFrame:
+    """Create synthetic competitor snapshots with Buy Box outcomes."""
     rng = np.random.default_rng(seed)
-    seller_price = rng.uniform(80, 500, n_samples)
-    competitor_price = seller_price + rng.normal(0, 25, n_samples)
-    seller_rating = rng.uniform(3.0, 5.0, n_samples)
-    shipping_days = rng.integers(1, 8, n_samples)
-    stock_level = rng.integers(1, 100, n_samples)
+    rows = []
 
-    price_gap = competitor_price - seller_price
-    logit = (
-        0.045 * price_gap
-        + 0.9 * (seller_rating - 4.0)
-        - 0.35 * (shipping_days - 3)
-        + 0.012 * stock_level
-        + rng.normal(0, 0.7, n_samples)
-    )
-    probability = 1 / (1 + np.exp(-logit))
-    won_buybox = rng.random(n_samples) < probability
+    for snapshot in range(1, n_snapshots + 1):
+        buybox_id = snapshot
+        base_price = rng.uniform(80, 500)
 
-    X = np.column_stack(
-        [seller_price, competitor_price, seller_rating, shipping_days, stock_level]
+        for seller_index in range(sellers_per_snapshot):
+            seller_id = snapshot * 100 + seller_index + 1
+            sell_price = max(10.0, base_price + rng.normal(0, 18))
+            shipping_price = max(0.0, rng.normal(4, 2))
+            feedback = rng.uniform(85, 100)
+            fulfillment = "FBA" if rng.random() < 0.6 else "FBM"
+
+            rows.append(
+                {
+                    "BuyboxHistoryId": buybox_id,
+                    "SellerId": seller_id,
+                    "SellPrice": round(float(sell_price), 2),
+                    "ShippingPrice": round(float(shipping_price), 2),
+                    "PositiveFeedbackPercent": round(float(feedback), 2),
+                    "FulfillmentChannel": fulfillment,
+                    "CreatedAt": "2026-01-01T00:00:00",
+                }
+            )
+
+    raw = pd.DataFrame(rows)
+    features = refining_data(raw)
+
+    # Create a synthetic but learnable Buy Box outcome. Lower price,
+    # stronger feedback, and FBA are given positive influence.
+    score = (
+        -0.12 * features["PriceRankNormalized"]
+        -0.035 * features["PriceGap"]
+        +0.06 * (features["PositiveFeedbackPercent"] - 90)
+        +0.9 * features["IsFBA"]
+        +rng.normal(0, 0.7, len(features))
     )
-    return X, won_buybox.astype(int)
+    probability = 1 / (1 + np.exp(-score))
+    features["IsBuyBoxWinner"] = (
+        rng.random(len(features)) < probability
+    ).astype(int)
+
+    return features
 
 
 def train():
-    X, y = generate_data()
+    data = generate_synthetic_history()
+    X = data[FEATURE_COLUMNS].fillna(0.0)
+    y = data["IsBuyBoxWinner"]
+
     model = Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("classifier", LogisticRegression(random_state=42)),
+            ("classifier", LogisticRegression(random_state=42, max_iter=1000)),
         ]
     )
     model.fit(X, y)
 
     artifacts = {
         "model": model,
-        "feature_names": [
-            "seller_price",
-            "competitor_price",
-            "seller_rating",
-            "shipping_days",
-            "stock_level",
-        ],
+        "feature_columns": FEATURE_COLUMNS,
     }
     joblib.dump(artifacts, OUTPUT)
+
+    print(f"Generated {len(data):,} synthetic feature rows")
     print(f"Saved demo model to: {OUTPUT}")
 
 
