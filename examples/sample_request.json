@@ -1,0 +1,48 @@
+{
+  "CompetitorsHistory": [
+    {
+      "BuyboxHistoryId": 1,
+      "SellerId": 101,
+      "SellPrice": 249.99,
+      "ShippingPrice": 4.99,
+      "PositiveFeedbackPercent": 98.5,
+      "FulfillmentChannel": "FBA",
+      "IsBuyBoxWinner": 1,
+      "CreatedAt": "2026-01-01T00:00:00"
+    },
+    {
+      "BuyboxHistoryId": 1,
+      "SellerId": 102,
+      "SellPrice": 255.99,
+      "ShippingPrice": 5.99,
+      "PositiveFeedbackPercent": 96.0,
+      "FulfillmentChannel": "FBM",
+      "IsBuyBoxWinner": 0,
+      "CreatedAt": "2026-01-01T00:00:00"
+    },
+    {
+      "BuyboxHistoryId": 1,
+      "SellerId": 103,
+      "SellPrice": 262.99,
+      "ShippingPrice": 0.0,
+      "PositiveFeedbackPercent": 99.0,
+      "FulfillmentChannel": "FBA",
+      "IsBuyBoxWinner": 0,
+      "CreatedAt": "2026-01-01T00:00:00"
+    },
+    {
+      "BuyboxHistoryId": 1,
+      "SellerId": 104,
+      "SellPrice": 270.99,
+      "ShippingPrice": 3.99,
+      "PositiveFeedbackPercent": 91.5,
+      "FulfillmentChannel": "FBM",
+      "IsBuyBoxWinner": 0,
+      "CreatedAt": "2026-01-01T00:00:00"
+    }
+  ],
+  "SellerId": 101,
+  "BuyboxHistoryId": 1,
+  "MinPrice": 240.0,
+  "MaxPrice": 270.0
+}
