@@ -2,8 +2,8 @@
 
 The original internship dataset/model is not included in this public repository.
 This script creates synthetic marketplace snapshots, runs the same feature
-engineering used by the API, trains a demonstration classifier, and writes the
-artifact expected by the FastAPI application.
+engineering used by the API, trains a demonstration classifier, evaluates it,
+and writes the artifact expected by the FastAPI application.
 """
 
 from pathlib import Path
@@ -12,6 +12,8 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -76,8 +78,6 @@ def generate_synthetic_history(
     raw = pd.DataFrame(rows)
     features = refining_data(raw)
 
-    # Create a synthetic but learnable Buy Box outcome. Lower price,
-    # stronger feedback, and FBA are given positive influence.
     score = (
         -0.12 * features["PriceRankNormalized"]
         -0.035 * features["PriceGap"]
@@ -98,21 +98,31 @@ def train():
     X = data[FEATURE_COLUMNS].fillna(0.0)
     y = data["IsBuyBoxWinner"]
 
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+
     model = Pipeline(
         [
             ("scaler", StandardScaler()),
             ("classifier", LogisticRegression(random_state=42, max_iter=1000)),
         ]
     )
-    model.fit(X, y)
+    model.fit(X_train, y_train)
+
+    predictions = model.predict(X_test)
+    accuracy = accuracy_score(y_test, predictions)
+
+    print(f"Generated {len(data):,} synthetic feature rows")
+    print(f"Synthetic hold-out accuracy: {accuracy:.3f}")
+    print("Classification report:")
+    print(classification_report(y_test, predictions, zero_division=0))
 
     artifacts = {
         "model": model,
         "feature_columns": FEATURE_COLUMNS,
     }
     joblib.dump(artifacts, OUTPUT)
-
-    print(f"Generated {len(data):,} synthetic feature rows")
     print(f"Saved demo model to: {OUTPUT}")
 
 
