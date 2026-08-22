@@ -1,0 +1,1 @@
+Generate the local synthetic model with `python scripts/train_demo_model.py`. The original internship model and company data are not included.
