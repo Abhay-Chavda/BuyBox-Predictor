@@ -1,0 +1,1 @@
+This directory is used for locally generated demo model artifacts.
