@@ -7,7 +7,6 @@
       "ShippingPrice": 4.99,
       "PositiveFeedbackPercent": 98.5,
       "FulfillmentChannel": "FBA",
-      "IsBuyBoxWinner": 1,
       "CreatedAt": "2026-01-01T00:00:00"
     },
     {
@@ -17,7 +16,6 @@
       "ShippingPrice": 5.99,
       "PositiveFeedbackPercent": 96.0,
       "FulfillmentChannel": "FBM",
-      "IsBuyBoxWinner": 0,
       "CreatedAt": "2026-01-01T00:00:00"
     },
     {
@@ -27,7 +25,6 @@
       "ShippingPrice": 0.0,
       "PositiveFeedbackPercent": 99.0,
       "FulfillmentChannel": "FBA",
-      "IsBuyBoxWinner": 0,
       "CreatedAt": "2026-01-01T00:00:00"
     },
     {
@@ -37,7 +34,6 @@
       "ShippingPrice": 3.99,
       "PositiveFeedbackPercent": 91.5,
       "FulfillmentChannel": "FBM",
-      "IsBuyBoxWinner": 0,
       "CreatedAt": "2026-01-01T00:00:00"
     }
   ],
