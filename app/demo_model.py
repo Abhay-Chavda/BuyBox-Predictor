@@ -72,6 +72,10 @@ def generate_synthetic_history(
                     "PositiveFeedbackPercent": round(float(feedback), 2),
                     "FulfillmentChannel": fulfillment,
                     "CreatedAt": "2026-01-01T00:00:00",
+                    # The existing preprocessing function expects this column
+                    # because the original project carried historical outcomes.
+                    # The placeholder is replaced with a synthetic target below.
+                    "IsBuyBoxWinner": 0,
                 }
             )
 
