@@ -66,7 +66,13 @@ def check_winner(df, seller_id, buybox_id):
     return value
 
 
-def refining_data(df: pd.DataFrame) -> pd.DataFrame:
+def refining_data(df: pd.DataFrame, include_target: bool = True) -> pd.DataFrame:
+    """Build model features from competitor snapshots.
+
+    Training data can include the historical Buy Box winner label. Prediction
+    requests should set ``include_target=False`` because the winner is the
+    value the model is trying to predict and is not known at inference time.
+    """
     featured_columns = [
         "SellPrice",
         "ShippingPrice",
@@ -86,6 +92,9 @@ def refining_data(df: pd.DataFrame) -> pd.DataFrame:
         "IsMinTotalPrice",
         "IsFBA",
     ]
+
+    if include_target and "IsBuyBoxWinner" not in df.columns:
+        raise ValueError("Training data must contain 'IsBuyBoxWinner'.")
 
     df_h = df.sort_values("BuyboxHistoryId").reset_index(drop=True)
 
@@ -129,38 +138,40 @@ def refining_data(df: pd.DataFrame) -> pd.DataFrame:
 
             price_rank = getting_price_rank(df_h, price, start_range, end_range)
 
-            rows.append(
-                {
-                    "BuyboxHistoryId": bid,
-                    "SellerId": seller_id,
-                    "SellPrice": price,
-                    "ShippingPrice": ship,
-                    "TotalPrice": round(total_price, 2),
-                    "MinCompetitorPrice": min_price,
-                    "MinTotalPriceInSnapshot": round(float(min_total_price), 2),
-                    "PriceGap": round(getting_price_gap(df_h, min_price, price), 2),
-                    "TotalPriceGap": round(total_price - float(min_total_price), 2),
-                    "IsMinSellPrice": int(price == min_price),
-                    "IsMinTotalPrice": int(
-                        abs(total_price - float(min_total_price)) < 1e-6
-                    ),
-                    "PriceRank": price_rank,
-                    "TotalCompetitorsInSnapshot": n_competitors,
-                    "PriceGapPercent": round(price_rank / min_price, 2)
-                    if min_price != 0
-                    else 0.0,
-                    "PriceRankNormalized": price_rank / n_competitors
-                    if n_competitors != 0
-                    else 0.0,
-                    "PositiveFeedbackPercent": pos_fb,
-                    "MaxFeedbackInSnapshot": max_feedback,
-                    "FeedbackGapFromMax": fb_gap,
-                    "FulfillmentChannel": channel,
-                    "IsFBA": is_fba,
-                    "IsBuyBoxWinner": _scalar(check_winner(df_h, seller_id, bid)),
-                    "CreatedAt": r["CreatedAt"],
-                }
-            )
+            row = {
+                "BuyboxHistoryId": bid,
+                "SellerId": seller_id,
+                "SellPrice": price,
+                "ShippingPrice": ship,
+                "TotalPrice": round(total_price, 2),
+                "MinCompetitorPrice": min_price,
+                "MinTotalPriceInSnapshot": round(float(min_total_price), 2),
+                "PriceGap": round(getting_price_gap(df_h, min_price, price), 2),
+                "TotalPriceGap": round(total_price - float(min_total_price), 2),
+                "IsMinSellPrice": int(price == min_price),
+                "IsMinTotalPrice": int(
+                    abs(total_price - float(min_total_price)) < 1e-6
+                ),
+                "PriceRank": price_rank,
+                "TotalCompetitorsInSnapshot": n_competitors,
+                "PriceGapPercent": round(price_rank / min_price, 2)
+                if min_price != 0
+                else 0.0,
+                "PriceRankNormalized": price_rank / n_competitors
+                if n_competitors != 0
+                else 0.0,
+                "PositiveFeedbackPercent": pos_fb,
+                "MaxFeedbackInSnapshot": max_feedback,
+                "FeedbackGapFromMax": fb_gap,
+                "FulfillmentChannel": channel,
+                "IsFBA": is_fba,
+                "CreatedAt": r["CreatedAt"],
+            }
+
+            if include_target:
+                row["IsBuyBoxWinner"] = _scalar(check_winner(df_h, seller_id, bid))
+
+            rows.append(row)
 
     df_features = pd.DataFrame(rows)
     df_features[featured_columns] = df_features[featured_columns].astype(float)
